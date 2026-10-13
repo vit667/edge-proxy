@@ -1,0 +1,21 @@
+{
+  "app": "odora",
+  "revision": 1,
+  "timeoutMs": 5000,
+  "maxBodyBytes": 1048576,
+  "origins": [
+    { "id": "local", "url": "http://host.docker.internal:3001", "priority": 1, "healthPath": "/health" }
+  ],
+  "database": {
+    "name": "erp0_prod",
+    "nodes": [
+      { "id": "odora_1", "host": "host.docker.internal", "port": 3003, "replicationHost": "FIRST_SERVER_IP", "replicationPort": 3003 },
+      { "id": "odora_2", "host": "SECOND_SERVER_IP", "port": 3003, "replicationHost": "SECOND_SERVER_IP", "replicationPort": 3003 }
+    ]
+  },
+  "node": {
+    "appHealthUrl": "http://host.docker.internal:3001/health",
+    "database": "odora_1",
+    "peers": ["https://origin-2.odora.uz/_edge/health"]
+  }
+}

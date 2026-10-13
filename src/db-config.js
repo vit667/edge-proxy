@@ -27,3 +27,16 @@ export function validateDatabase(value) {
     ids.add(node.id);
   }
 }
+
+// The optional `node` section (see node-health.js): what this server's agent checks for GET /_edge/health.
+export function validateNode(value, config) {
+  if (!value || typeof value !== 'object') throw new Error('Invalid node');
+  if (value.peers !== undefined && (!Array.isArray(value.peers) || value.peers.length > 8)) throw new Error('Invalid node peers');
+  for (const url of [value.appHealthUrl, ...(value.peers || [])]) {
+    if (url === undefined) continue;
+    let parsed;
+    try { parsed = new URL(url); } catch { throw new Error('Invalid node URL'); }
+    if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) throw new Error('Invalid node URL');
+  }
+  if (value.database !== undefined && !config.database?.nodes?.some(node => node.id === value.database)) throw new Error('node.database must name a node from database.nodes');
+}

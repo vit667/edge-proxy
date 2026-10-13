@@ -20,12 +20,23 @@ export type Circuit = 'closed' | 'half-open' | 'open';
 export type OriginState = {
   id: string; circuit: Circuit; failures: number; requests: number; errors: number; latencyMs: number | null;
   lastStatus: number | null; lastError: string | null; lastChangeAt: number; retryAt: number | null;
-  check: { healthy: boolean; status?: number; error?: string; latencyMs: number; path: string; at: number } | null;
+  check: { healthy: boolean; status?: number; error?: string; latencyMs: number; path: string; at: number; generation?: number | null; reason?: string | null } | null;
+  /** Left behind by a database failover: never routed to */
+  stale?: boolean;
+  /** Its own agent says it must not serve (for example, its database is a replica) */
+  declined?: boolean;
+};
+export type NodeHealth = {
+  ready: boolean; reason: string | null; fenced: boolean; fenceGeneration: number | null;
+  app: { ok: boolean; status: number | null; version: string | null; unchecked?: boolean };
+  db: { reachable: boolean; role: 'primary' | 'standby' | null; timeline: number | null; readOnly?: boolean; error?: string } | null;
+  peers: { url: string; role: string | null; timeline: number | null }[];
 };
 export type Status = {
   node: string; startedAt: number; version: string; edgeAuthDisabled: boolean; config: Config; origins: OriginState[];
   traffic: { windowMinutes: number; requests: number; errors: number; errorRate: number; avgMs: number | null };
   webhooks: WebhookState[];
+  nodeHealth: NodeHealth | null;
 };
 export type LogEntry = { at: number; method: string; path: string; status: number; origin: string | null; attempts: number; ms: number; ip: string; error: string | null; webhook: string | null };
 export type Traffic = { series: { minute: number; requests: number; errors: number; avgMs: number | null; maxMs: number | null; origins: Record<string, number> }[]; log: LogEntry[] };

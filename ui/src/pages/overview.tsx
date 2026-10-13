@@ -9,7 +9,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import { Spinner } from '@/components/ui/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CircuitBadge, Facts, Mono, PageHeader, Stat } from '@/components/common';
-import { api, type OriginState, type Status, type Traffic } from '@/lib/api';
+import { api, type NodeHealth, type OriginState, type Status, type Traffic } from '@/lib/api';
 import { ago, duration, ms, number, percent, reason, time } from '@/lib/format';
 import { useNow, usePoll } from '@/lib/use-poll';
 
@@ -48,6 +48,8 @@ export function OverviewPage({ status, reload, healthy }: { status: Status; relo
         <Stat label="Ошибки 5xx" icon={<AlertTriangle />} value={<span className={totals.errorRate > 0.05 ? 'text-destructive' : undefined}>{percent(totals.errorRate)}</span>} hint={`${number(totals.errors)} ответов за 5 минут`} />
         <Stat label="Среднее время ответа" icon={<Timer />} value={ms(totals.avgMs)} hint={`таймаут заголовков ${ms(config.timeoutMs)}`} />
       </div>
+
+      {status.nodeHealth && <NodeHealthCard health={status.nodeHealth} node={status.node} />}
 
       <Card className="gap-4">
         <CardHeader>
@@ -95,7 +97,7 @@ function OriginCard({ origin, state, now }: { origin: Status['config']['origins'
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><Globe className="text-muted-foreground size-4" />{origin.id}</CardTitle>
         <CardDescription className="truncate"><Mono>{origin.url}</Mono></CardDescription>
-        <CardAction><CircuitBadge circuit={state.circuit} /></CardAction>
+        <CardAction><CircuitBadge circuit={state.circuit} stale={state.stale} declined={state.declined} /></CardAction>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-1.5">
@@ -108,9 +110,33 @@ function OriginCard({ origin, state, now }: { origin: Status['config']['origins'
           ['Отклик (EWMA)', <span key="l" className="inline-flex items-center gap-1"><Gauge className="text-muted-foreground size-3.5" />{ms(state.latencyMs)}</span>],
           ['Запросы / ошибки', `${number(state.requests)} / ${number(state.errors)}`],
           [<Tooltip key="c"><TooltipTrigger className="underline decoration-dotted underline-offset-2">Health-check</TooltipTrigger><TooltipContent>Путь {check?.path ?? origin.healthPath ?? '/healthz'} · {check ? ago(check.at, now) : '—'}</TooltipContent></Tooltip>, <span key="h" className={check && !check.healthy ? 'text-destructive' : undefined}>{checkText}</span>],
+          ...(check?.generation ? [['Поколение базы', String(check.generation)] as [string, string]] : []),
+          ...(check?.reason ? [['Сообщает агент', reason(check.reason)] as [string, string]] : []),
           ...(state.lastError ? [['Последняя ошибка', <span key="e" className="text-destructive">{reason(state.lastError)}</span>] as [string, React.ReactNode]] : []),
           ...(state.circuit !== 'closed' && state.retryAt ? [['Повторная попытка', state.retryAt > now ? `через ${Math.ceil((state.retryAt - now) / 1000)} с` : 'при следующем запросе'] as [string, string]] : [])
         ]} />
+      </CardContent>
+    </Card>
+  );
+}
+
+/** What this server tells the balancer in front at /_edge/health */
+function NodeHealthCard({ health, node }: { health: NodeHealth; node: string }) {
+  return (
+    <Card className="gap-4">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Server className="text-muted-foreground size-4" />Этот сервер: {node}</CardTitle>
+        <CardDescription>Ответ балансировщику на /_edge/health. Трафик приходит сюда, только когда сервер готов.</CardDescription>
+        <CardAction>{health.ready ? <Badge variant="success">Готов принимать трафик</Badge> : <Badge variant={health.fenced ? 'destructive' : 'outline'}>{reason(health.reason) || 'Не готов'}</Badge>}</CardAction>
+      </CardHeader>
+      <CardContent>
+        <Facts items={[
+          ['Приложение', health.app.unchecked ? 'не проверяется' : health.app.ok ? `отвечает${health.app.version ? ` · версия ${health.app.version}` : ''}` : <span key="a" className="text-destructive">не отвечает</span>],
+          ['Локальная база', !health.db ? 'не задана' : !health.db.reachable ? <span key="d" className="text-destructive">недоступна</span> : `${health.db.role === 'primary' ? 'основная' : 'реплика'} · поколение ${health.db.timeline}`],
+          ...(health.fenceGeneration ? [['Наибольшее поколение у соседей', String(health.fenceGeneration)] as [string, string]] : []),
+          ...(health.peers.length ? [['Соседи', health.peers.map(peer => `${new URL(peer.url).host}: ${peer.role === 'primary' ? `основная, поколение ${peer.timeline}` : peer.role === 'standby' ? 'реплика' : 'нет ответа'}`).join(' · ')] as [string, string]] : [])
+        ]} />
+        {health.fenced && <p className="text-destructive mt-3 text-sm">У соседнего сервера база новее: он был повышен, пока этот сервер был недоступен. Этот сервер не получит трафик, пока его база не будет пересоздана как реплика (deploy/replication/replica-setup.sh).</p>}
       </CardContent>
     </Card>
   );

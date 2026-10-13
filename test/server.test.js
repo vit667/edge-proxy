@@ -47,6 +47,9 @@ test('agent HTTP: authentication, failover, admin isolation, atomic revision upd
     assert.equal((await fetch(uiBase + '/admin/status', { headers: { 'x-admin-token': token } })).status, 401);
     assert.equal(await (await fetch(base + '/admin/status', { headers: { ...edge, 'x-admin-token': adminToken } })).text(), 'main', 'the proxy port forwards /admin to the application');
     assert.equal((await fetch(base + '/_edge/healthz')).status, 200);
+    const nodeHealth = await fetch(base + '/_edge/health');
+    assert.equal(nodeHealth.status, 200, 'without a node section the agent itself is all there is to check');
+    assert.equal((await nodeHealth.json()).ready, true);
 
     // Token and browser-session authentication.
     assert.equal((await fetch(base + '/events')).status, 401);

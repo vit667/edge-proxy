@@ -1,0 +1,14 @@
+{
+  "app": "odora",
+  "revision": 1,
+  "timeoutMs": 10000,
+  "maxBodyBytes": 1048576,
+  "maxUploadBytes": 52428800,
+  "healthIntervalMs": 5000,
+  "publicAccess": true,
+  "circuit": { "failureThreshold": 3, "cooldownMs": 10000 },
+  "origins": [
+    { "id": "odora_1", "url": "https://origin-1.odora.uz", "priority": 1, "healthPath": "/_edge/health" },
+    { "id": "odora_2", "url": "https://origin-2.odora.uz", "priority": 2, "healthPath": "/_edge/health" }
+  ]
+}

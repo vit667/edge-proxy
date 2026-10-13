@@ -32,5 +32,5 @@ export function duration(fromMs: number, now = Date.now()) {
   return `${Math.floor(seconds / 86400)} д ${Math.floor((seconds % 86400) / 3600)} ч`;
 }
 
-export const reasons: Record<string, string> = { DNS: 'Ошибка DNS', TLS: 'Ошибка TLS', TIMEOUT: 'Таймаут', CONNECTION: 'Нет соединения', CLIENT_CLOSED: 'Клиент отключился', BODY_TOO_LARGE: 'Тело слишком большое', AUTH: 'Ошибка входа', BAD_SECRET: 'Неверный secret token', SOURCE_IP: 'Чужой IP', METHOD: 'Не POST', SECRET_NOT_SET: 'Секрет не задан' };
+export const reasons: Record<string, string> = { DNS: 'Ошибка DNS', TLS: 'Ошибка TLS', TIMEOUT: 'Таймаут', CONNECTION: 'Нет соединения', CLIENT_CLOSED: 'Клиент отключился', BODY_TOO_LARGE: 'Тело слишком большое', AUTH: 'Ошибка входа', BAD_SECRET: 'Неверный secret token', SOURCE_IP: 'Чужой IP', METHOD: 'Не POST', SECRET_NOT_SET: 'Секрет не задан', LOOP: 'Петля между агентами', app_unavailable: 'Приложение не отвечает', database_unreachable: 'База недоступна', database_is_replica: 'База — реплика', database_read_only: 'База только для чтения', fenced_old_primary: 'Устаревший primary' };
 export const reason = (value: string | null | undefined) => (value ? reasons[value] || value : '');

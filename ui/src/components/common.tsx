@@ -18,7 +18,10 @@ export function StatusDot({ tone, pulse = false, className }: { tone: Tone; puls
 export const circuitTone: Record<Circuit, Tone> = { closed: 'success', 'half-open': 'warning', open: 'destructive' };
 export const circuitLabel: Record<Circuit, string> = { closed: 'Доступен', 'half-open': 'Пробный запрос', open: 'Исключён' };
 
-export function CircuitBadge({ circuit }: { circuit: Circuit }) {
+export function CircuitBadge({ circuit, stale, declined }: { circuit: Circuit; stale?: boolean; declined?: boolean }) {
+  // Set aside on purpose, not broken: shown differently from a failure.
+  if (stale) return <Badge variant="destructive"><StatusDot tone="destructive" />Устаревшие данные</Badge>;
+  if (declined) return <Badge variant="outline"><StatusDot tone="muted" />В резерве</Badge>;
   const variant = circuit === 'closed' ? 'success' : circuit === 'open' ? 'destructive' : 'warning';
   return <Badge variant={variant}><StatusDot tone={circuitTone[circuit]} />{circuitLabel[circuit]}</Badge>;
 }

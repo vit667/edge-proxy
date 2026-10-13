@@ -44,7 +44,7 @@ test('Worker accepts Telegram without x-edge-token and rejects a wrong secret', 
   };
   const original = globalThis.fetch;
   let delivered = 0;
-  globalThis.fetch = async (url, options) => { delivered++; assert.equal(url.pathname, '/telegram/webhook'); assert.equal(await new Response(options.body).text(), '{"update_id":1}'); return new Response('ok'); };
+  globalThis.fetch = async (url, options) => { if (url.pathname === '/healthz') return new Response('ok'); delivered++; assert.equal(url.pathname, '/telegram/webhook'); assert.equal(await new Response(options.body).text(), '{"update_id":1}'); return new Response('ok'); };
   try {
     assert.equal((await worker.fetch(post({ 'x-telegram-bot-api-secret-token': 'wrong' }), env)).status, 401);
     assert.equal((await worker.fetch(post({ 'x-telegram-bot-api-secret-token': 'tg-secret' }), env)).status, 200);

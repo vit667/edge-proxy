@@ -1,4 +1,4 @@
-import { validateDatabase } from './db-config.js';
+import { validateDatabase, validateNode } from './db-config.js';
 import { failureReason } from './health.js';
 import { validateWebhooks } from './webhooks.js';
 
@@ -15,7 +15,7 @@ export function validateConfig(value) {
   if (!int(value.maxBodyBytes, 1, 10485760)) throw new Error('Invalid maxBodyBytes');
   if (value.maxUploadBytes !== undefined && !int(value.maxUploadBytes, 1, 1073741824)) throw new Error('Invalid maxUploadBytes');
   if (value.healthIntervalMs !== undefined && !int(value.healthIntervalMs, 1000, 300000)) throw new Error('Invalid healthIntervalMs');
-  for (const flag of ['retryWrites', 'exposeDebugHeaders']) if (value[flag] !== undefined && typeof value[flag] !== 'boolean') throw new Error('Invalid ' + flag);
+  for (const flag of ['retryWrites', 'exposeDebugHeaders', 'publicAccess']) if (value[flag] !== undefined && typeof value[flag] !== 'boolean') throw new Error('Invalid ' + flag);
   if (value.circuit !== undefined) {
     const { failureThreshold, cooldownMs } = value.circuit || {};
     if ((failureThreshold !== undefined && !int(failureThreshold, 1, 20)) || (cooldownMs !== undefined && !int(cooldownMs, 1000, 600000))) throw new Error('Invalid circuit');
@@ -33,6 +33,7 @@ export function validateConfig(value) {
   }
   if (value.database !== undefined) validateDatabase(value.database);
   if (value.webhooks !== undefined) validateWebhooks(value.webhooks);
+  if (value.node !== undefined) validateNode(value.node, value);
   return structuredClone(value);
 }
 

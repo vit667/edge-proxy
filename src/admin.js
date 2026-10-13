@@ -35,6 +35,7 @@ export function createAdmin(agent) {
       node: agent.nodeId, startedAt: agent.telemetry.startedAt, version: agent.version,
       edgeAuthDisabled: agent.edgeAuthDisabled, config: agent.config,
       origins: agent.pool.snapshot(agent.config), traffic: agent.telemetry.totals(),
+      nodeHealth: agent.config.node ? await agent.nodeHealth.get() : null,
       webhooks: (agent.config.webhooks || []).map(route => ({
         id: route.id, secretConfigured: !!process.env[route.secretEnv],
         botTokenConfigured: !!(route.botTokenEnv && process.env[route.botTokenEnv]), ...agent.webhookStats.get(route.id)

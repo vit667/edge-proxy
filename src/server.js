@@ -10,6 +10,7 @@ import { OriginPool } from './balancer.js';
 import { Telemetry } from './telemetry.js';
 import { createAdmin, checkAll } from './admin.js';
 import { findWebhook, verifyWebhook, WebhookStats } from './webhooks.js';
+import { NodeHealth, fenceFile } from './node-health.js';
 import { equal, sessionKey, issueSession, clearSession, readSession, RevokedSessions, LoginLimiter, sameOrigin, loginPage, logoutPage } from './browser-auth.js';
 
 const env = process.env;
@@ -47,6 +48,8 @@ const agent = {
   runChecks() { return this.checking ??= checkAll(this.config, this.pool).finally(() => { this.checking = null; }); }
 };
 agent.history.push({ revision: agent.config.revision, appliedAt: Date.now(), config: agent.config });
+// This server's own readiness (application + local database role), served at /_edge/health for the balancer in front.
+agent.nodeHealth = new NodeHealth(() => agent.config, fenceFile(configPath));
 const admin = createAdmin(agent);
 
 let checkTimer;
@@ -101,6 +104,16 @@ async function readForm(req, limit = 4096) {
 
 async function edgeRoute(req, url, ip) {
   if (url.pathname === '/_edge/healthz') return Response.json({ alive: true, revision: agent.config.revision });
+  if (url.pathname === '/_edge/health') {
+    // 200 only when this server can serve users: the application answers and the local database takes writes.
+    const health = await agent.nodeHealth.get();
+    return Response.json({
+      ready: health.ready, reason: health.reason, node: agent.nodeId, version: agent.version,
+      app: { ok: health.app.ok, version: health.app.version },
+      db: health.db && { role: health.db.role, timeline: health.db.timeline },
+      fenced: health.fenced
+    }, { status: health.ready ? 200 : 503, headers: { 'cache-control': 'no-store' } });
+  }
   if (url.pathname === '/_edge/login') {
     if (req.method === 'GET') return loginPage();
     if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
@@ -149,7 +162,8 @@ async function proxyRoute(req, url, ip, signal, trace) {
   if (route) return webhookRoute(req, url, ip, signal, trace, route);
   const tokenOk = equal(req.headers['x-edge-token'], edgeToken);
   const session = !tokenOk && readSession(req.headers.cookie, key, revoked);
-  if (!agent.edgeAuthDisabled && !tokenOk && !session) {
+  // publicAccess: the application behind does its own sign-in (a public site); the proxy only routes.
+  if (!agent.edgeAuthDisabled && !agent.config.publicAccess && !tokenOk && !session) {
     if (req.method === 'GET' && (req.headers.accept || '').includes('text/html')) return new Response(null, { status: 302, headers: { location: '/_edge/login' } });
     return new Response('Unauthorized', { status: 401 });
   }

@@ -11,7 +11,7 @@ const blank = () => ({
 });
 
 export class OriginPool {
-  constructor(now = () => Date.now()) { this.now = now; this.states = new Map(); }
+  constructor(now = () => Date.now()) { this.now = now; this.states = new Map(); this.maxGeneration = 0; }
 
   state(id) {
     if (!this.states.has(id)) this.states.set(id, blank());
@@ -36,7 +36,7 @@ export class OriginPool {
    */
   order(origins) {
     const available = [], open = [];
-    for (const origin of origins) (this.circuit(origin.id) === 'open' ? open : available).push(origin);
+    for (const origin of this.current(origins)) (this.circuit(origin.id) === 'open' ? open : available).push(origin);
     const groups = new Map();
     for (const origin of available) {
       if (!groups.has(origin.priority)) groups.set(origin.priority, []);
@@ -46,6 +46,27 @@ export class OriginPool {
     for (const priority of [...groups.keys()].sort((a, b) => a - b)) ordered.push(...this.#weighted(groups.get(priority)));
     open.sort((a, b) => this.state(a.id).openUntil - this.state(b.id).openUntil);
     return [...ordered, ...open];
+  }
+
+  /**
+   * Drops origins left behind by a database failover: one whose health check reports an older generation than the
+   * newest ever seen is a former primary and must not serve, even as a last resort. Origins that report no
+   * generation (plain health endpoints) are not affected.
+   */
+  current(origins) {
+    return origins.filter(origin => !this.stale(origin.id) && !this.declined(origin.id));
+  }
+  /**
+   * The origin's own agent says it must not serve (for example its database is a replica). That is a statement, not
+   * a failure that may have passed, so such an origin is not tried even when nothing else is left.
+   */
+  declined(id) {
+    const check = this.state(id).check;
+    return !!check && !check.healthy && !!check.reason;
+  }
+  stale(id) {
+    const generation = this.state(id).check?.generation;
+    return Number.isInteger(generation) && generation < this.maxGeneration;
   }
 
   // Smooth weighted round-robin (as in nginx): deterministic and evenly interleaved.
@@ -92,6 +113,7 @@ export class OriginPool {
   checked(result, config) {
     const state = this.state(result.id);
     state.check = { ...result, at: this.now() };
+    if (result.healthy && Number.isInteger(result.generation) && result.generation > this.maxGeneration) this.maxGeneration = result.generation;
     if (!result.healthy) this.failure(result.id, result.error || `HTTP ${result.status}`, { ...config, circuit: { ...circuitDefaults, ...config.circuit, failureThreshold: 1 } }, result.status ?? null);
     else if (this.circuit(result.id) !== 'open') this.success(result.id, result.latencyMs, result.status);
   }
@@ -103,7 +125,7 @@ export class OriginPool {
         id: origin.id, circuit: this.circuit(origin.id), failures: state.failures,
         requests: state.requests, errors: state.errors, latencyMs: state.latencyMs,
         lastStatus: state.lastStatus, lastError: state.lastError, lastChangeAt: state.lastChangeAt,
-        retryAt: state.openUntil || null, check: state.check
+        retryAt: state.openUntil || null, check: state.check, stale: this.stale(origin.id), declined: this.declined(origin.id)
       };
     });
   }
