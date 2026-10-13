@@ -30,7 +30,7 @@ Telegram ─────HTTPS──▶  │ nginx ── = /api/telegram/webhook
 
 ## 1. Собрать и скопировать агент
 
-На своей машине (PowerShell, из папки `Edge-Webhook-Proxy`):
+На своей машине (PowerShell, из папки проекта):
 
 ```powershell
 npm run build:ui

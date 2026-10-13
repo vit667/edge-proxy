@@ -1,4 +1,4 @@
-name = "edge-webhook-proxy"
+name = "edge-proxy"
 main = "src/worker.js"
 compatibility_date = "2026-10-12"
 # Set EDGE_TOKEN and APP_CONFIG with `wrangler secret put`.

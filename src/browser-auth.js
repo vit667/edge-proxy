@@ -3,8 +3,8 @@ export const sessionCookie = 'edge_proxy_session';
 const lifetime = 8 * 60 * 60;
 export const equal = (a, b) => { const left = Buffer.from(a || ''); const right = Buffer.from(b || ''); return left.length === right.length && timingSafeEqual(left, right); };
 // The cookie is signed with a key derived from EDGE_TOKEN, never with the token itself.
-export const sessionKey = token => Buffer.from(hkdfSync('sha256', token, 'edge-webhook-proxy', 'browser-session-v2', 32));
-const signature = (value, key) => createHmac('sha256', key).update('edge-browser-v2:' + value).digest('base64url');
+export const sessionKey = token => Buffer.from(hkdfSync('sha256', token, 'edge-proxy', 'browser-session-v3', 32));
+const signature = (value, key) => createHmac('sha256', key).update('edge-browser-v3:' + value).digest('base64url');
 
 export function issueSession(key, secure = false) {
   const payload = `${Math.floor(Date.now() / 1000) + lifetime}.${randomBytes(16).toString('hex')}`;

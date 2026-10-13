@@ -1,8 +1,12 @@
 {
-  "name": "edge-webhook-proxy-ui",
+  "name": "edge-proxy-ui",
   "private": true,
   "type": "module",
-  "scripts": { "dev": "vite", "build": "tsc --noEmit && vite build", "typecheck": "tsc --noEmit" },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-dialog": "^1.1.23",

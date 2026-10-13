@@ -1,22 +1,61 @@
 {
-  "app": "edge-webhook-proxy",
+  "app": "odora",
   "revision": 1,
   "timeoutMs": 2500,
   "maxBodyBytes": 1048576,
   "maxUploadBytes": 52428800,
   "healthIntervalMs": 5000,
-  "circuit": { "failureThreshold": 3, "cooldownMs": 10000 },
+  "circuit": {
+    "failureThreshold": 3,
+    "cooldownMs": 10000
+  },
   "origins": [
-    { "id": "main", "url": "http://127.0.0.1:9101", "priority": 1, "weight": 3, "healthPath": "/" },
-    { "id": "standby", "url": "http://127.0.0.1:9102", "priority": 1, "weight": 1, "healthPath": "/" },
-    { "id": "replica", "url": "http://127.0.0.1:9103", "priority": 2, "readOnly": true, "healthPath": "/" }
+    {
+      "id": "main",
+      "url": "http://127.0.0.1:9101",
+      "priority": 1,
+      "weight": 3,
+      "healthPath": "/"
+    },
+    {
+      "id": "standby",
+      "url": "http://127.0.0.1:9102",
+      "priority": 1,
+      "weight": 1,
+      "healthPath": "/"
+    },
+    {
+      "id": "replica",
+      "url": "http://127.0.0.1:9103",
+      "priority": 2,
+      "readOnly": true,
+      "healthPath": "/"
+    }
   ],
   "database": {
     "name": "edge",
     "nodes": [
-      { "id": "main", "host": "127.0.0.1", "port": 5432, "replicationHost": "main", "replicationPort": 5432 },
-      { "id": "standby", "host": "127.0.0.1", "port": 5433, "replicationHost": "standby", "replicationPort": 5432 },
-      { "id": "replica", "host": "127.0.0.1", "port": 5434, "replicationHost": "replica", "replicationPort": 5432 }
+      {
+        "id": "main",
+        "host": "127.0.0.1",
+        "port": 5432,
+        "replicationHost": "main",
+        "replicationPort": 5432
+      },
+      {
+        "id": "standby",
+        "host": "127.0.0.1",
+        "port": 5433,
+        "replicationHost": "standby",
+        "replicationPort": 5432
+      },
+      {
+        "id": "replica",
+        "host": "127.0.0.1",
+        "port": 5434,
+        "replicationHost": "replica",
+        "replicationPort": 5432
+      }
     ]
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "edge-webhook-proxy",
+  "name": "edge-proxy",
   "version": "0.2.0",
   "private": true,
   "type": "module",

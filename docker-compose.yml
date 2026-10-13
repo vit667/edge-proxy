@@ -6,7 +6,7 @@
 services:
   edge-proxy:
     build: .
-    image: edge-webhook-proxy:latest
+    image: edge-proxy:latest
     container_name: edge-proxy
     restart: unless-stopped
     env_file: agent.env
