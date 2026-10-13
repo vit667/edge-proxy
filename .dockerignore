@@ -1,0 +1,9 @@
+.git
+.env
+agent.env
+.dev.vars
+node_modules
+ui/node_modules
+ui/dist
+config.local.json
+deploy/.env

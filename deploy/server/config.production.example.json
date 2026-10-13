@@ -1,0 +1,20 @@
+{
+  "app": "odora",
+  "revision": 1,
+  "timeoutMs": 5000,
+  "maxBodyBytes": 1048576,
+  "healthIntervalMs": 5000,
+  "circuit": { "failureThreshold": 3, "cooldownMs": 15000 },
+  "origins": [
+    { "id": "local", "url": "http://127.0.0.1:3001", "priority": 1, "healthPath": "/health" }
+  ],
+  "webhooks": [
+    {
+      "id": "odora-bot",
+      "path": "/api/telegram/webhook",
+      "provider": "telegram",
+      "secretEnv": "TELEGRAM_WEBHOOK_SECRET",
+      "botTokenEnv": "TELEGRAM_BOT_TOKEN"
+    }
+  ]
+}

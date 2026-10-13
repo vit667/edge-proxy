@@ -1,0 +1,8 @@
+node_modules/
+ui/node_modules/
+ui/dist/
+.env
+agent.env
+.dev.vars
+.wrangler/
+config.local.json

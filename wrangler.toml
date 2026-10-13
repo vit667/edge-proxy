@@ -1,0 +1,6 @@
+name = "edge-webhook-proxy"
+main = "src/worker.js"
+compatibility_date = "2026-10-12"
+# Set EDGE_TOKEN and APP_CONFIG with `wrangler secret put`.
+# APP_CONFIG uses config.example.json, with publicly reachable HTTPS origins.
+# For Worker -> agents, set ORIGIN_TOKEN to the agents' shared EDGE_TOKEN.

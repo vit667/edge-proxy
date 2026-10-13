@@ -1,0 +1,49 @@
+# Edge proxy agent.
+#   cp deploy/server/agent.env.example agent.env   # fill in the tokens
+#   docker compose up -d --build
+# Proxy:  http://<EDGE_BIND>:8787        Panel: http://127.0.0.1:8788 (on the server: ssh -L 8788:127.0.0.1:8788 …)
+
+services:
+  edge-proxy:
+    build: .
+    image: edge-webhook-proxy:latest
+    container_name: edge-proxy
+    restart: unless-stopped
+    env_file: agent.env
+    environment:
+      # Fixed inside the container; agent.env holds tokens and secrets only.
+      HOST: 0.0.0.0
+      PORT: 8787
+      UI_HOST: 0.0.0.0
+      UI_PORT: 8788
+      CONFIG_PATH: /data/config.json
+    ports:
+      # 127.0.0.1 when nginx on the same host is in front; EDGE_BIND=0.0.0.0 to expose the proxy port directly.
+      - "${EDGE_BIND:-127.0.0.1}:${EDGE_PORT:-8787}:8787"
+      # The panel and admin API never face the internet.
+      - "127.0.0.1:${PANEL_PORT:-8788}:8788"
+    extra_hosts:
+      # Origins on this host are reachable as http://host.docker.internal:<port> if they listen on 0.0.0.0
+      # (Next.js and Express do by default). A service bound to 127.0.0.1 is invisible from the container:
+      # then delete `ports` and `extra_hosts`, add `network_mode: host`, set HOST and UI_HOST below to 127.0.0.1
+      # and use http://127.0.0.1:<port> as the origin.
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - edge-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 512m
+    stop_grace_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+
+volumes:
+  edge-data:

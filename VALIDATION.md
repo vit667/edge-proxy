@@ -1,0 +1,27 @@
+# Проверка
+
+## 13 октября 2026 — Telegram webhooks
+
+- `npm test`: 38 тестов успешно. Новые: валидация маршрутов, проверка secret token, метод, отказ без заданного секрета, сети Telegram, Worker без x-edge-token; интеграционный тест агента с подставным Telegram Bot API (`getWebhookInfo`, `setWebhook`, только https, секреты не возвращаются в ответах).
+- Панель: страница «Webhooks» против запущенного агента; 3 доставки с верным секретом → 200, поддельный секрет → 401, GET → 405, счётчики и причины отказа отображаются.
+
+## 13 октября 2026 — балансер, панель, управление репликацией
+
+- `npm test`: 33 теста успешно (веса, circuit breaker, таймаут заголовков при медленном теле, отмена при отключении клиента, forwarding-заголовки, rewriteHost, потоковые загрузки, отзыв сессий, изоляция admin API на UI-порту, история конфигурации, Worker).
+- Отдельный стенд `edge-proxy-e2e` (PostgreSQL 17.11, порты 25432–25434), все операции через `src/db.js`:
+  - `sync ANY 1 (standby, replica)` → оба узла в `quorum`;
+  - `sync` с несуществующим узлом → `unknown_node`;
+  - `promote standby` при живом main → `primary_alive` (защита от split brain);
+  - main остановлен → статус: `no_primary`, `unreachable`, `not_streaming`;
+  - `promote standby` → primary на timeline 2, созданы слоты `main` и `replica`;
+  - `follow replica → standby` без перезапуска → `streaming: true`; строки 1 (записана на старом main) и 2 (на новом primary) прочитаны на replica;
+  - `sync FIRST 1 (replica)` на новом primary → коммит проходит.
+- Панель (сборка `ui/dist`) проверена в браузере против того же стенда: обзор и веса 3:1, топология после failover, переключение sync → async из UI, журнал без query string, светлая и тёмная тема.
+- Docker-образ собран (UI собирается отдельной стадией), контейнер отдаёт панель и admin API, `HEALTHCHECK` через `/_edge/healthz` — `healthy`.
+
+Не проверено: Worker в среде Cloudflare, возврат прежнего primary (`pg_rewind`), работа под нагрузкой.
+
+## 12 октября 2026 — MVP
+
+- `node --test`: 10 тестов успешно, включая живые HTTP-серверы и перезапуск агента.
+- PostgreSQL 17: `pg_stat_replication` показал `standby / streaming / sync` и `replica / streaming / async`; данные с main прочитаны на обеих репликах; после остановки main `pg_promote` на standby прошёл, обе строки сохранились.
